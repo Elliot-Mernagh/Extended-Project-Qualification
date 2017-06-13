@@ -1,0 +1,138 @@
+//Includes
+#include <iostream>
+#include <string>
+#include <SDL/SDL.h>
+#include <GL/glew.h>
+#include <stdio.h>
+  
+//Namespace
+using namespace std;
+
+//Forward Declarations
+void openWindow(SDL_Window*& window, SDL_Surface*& screenSurface, SDL_Surface*& backgroundSurface, SDL_Surface*& rocket, SDL_Rect &rocketLocaion); //, SDL_Rect*& rocketLocaion
+void processInput(int &shipX, int &shipY, int &shipMove, bool &play);
+void refreshWindow(SDL_Window*& window, SDL_Surface*& screenSurface, SDL_Surface*& backgroundSurface, SDL_Surface*& rocket, SDL_Rect& rocketLocation, int &shipX, int &shipY);
+
+const int screenWidth = 800;  // hard coded for ease
+const int screenHeight = 600;
+
+//Main Code
+int main(int argc, char** argv)
+{
+	bool play = true;
+	SDL_Init(SDL_INIT_EVERYTHING);
+	
+	// delcares variables
+	SDL_Window* window = NULL;
+	SDL_Surface* screenSurface = NULL;
+	SDL_Surface* backgroundSurface = NULL;
+	SDL_Surface* rocket = NULL;
+	SDL_Rect rocketLocation;
+	rocketLocation.x = 400;
+	rocketLocation.y = 300;
+	rocketLocation.h = 60;
+	rocketLocation.w = 40;
+
+	backgroundSurface = SDL_LoadBMP("background.bmp");
+	// This error check was needed to check if the program had found the file in the directory
+	if (backgroundSurface == NULL)
+	{
+		cout << "Background failed to load" << endl;
+	}
+	rocket = SDL_LoadBMP("rocket.bmp");	 // if the background failed we can assume this did too so no need for another check.
+
+	openWindow(window, screenSurface, backgroundSurface, rocket, rocketLocation);
+
+	// Delcares the starting position and movement speed
+	int shipX = 390;
+	int shipY = 290;
+	int shipMove = 10;
+	
+	// Game Loop
+	while (play == true){
+		refreshWindow(window, screenSurface, backgroundSurface, rocket, rocketLocation, shipX, shipY);	  // refresh needs to go first otherwise when the window is closed, refresh runs and can't do its thing
+		processInput(shipX, shipY, shipMove, play);
+	}
+	return 0;
+}
+
+void openWindow(SDL_Window*& window, SDL_Surface*& screenSurface, SDL_Surface*& backgroundSurface, SDL_Surface*& rocket, SDL_Rect &rocketLocation) // , SDL_Rect*& rocketLocation
+{
+	//initialize SDL and screen properties 
+	SDL_Init(SDL_INIT_EVERYTHING);
+
+	// constructs the window with the specificed properties
+	window = SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screenWidth, screenHeight, SDL_WINDOW_SHOWN);
+	screenSurface = SDL_GetWindowSurface(window);
+
+	//Apply the image to the screen
+	SDL_BlitSurface(backgroundSurface, NULL, screenSurface , NULL);	// Sends background img to the screen
+	// Add rocket to the screen
+	SDL_BlitSurface(rocket, NULL, screenSurface, &rocketLocation);
+	//Update the surface of the screen
+	SDL_UpdateWindowSurface(window);
+}
+
+void processInput(int &shipX, int &shipY, int &shipMove, bool &play)
+{
+	SDL_Event evnt;
+	SDL_PollEvent(&evnt);	 // waits for an event to occur
+		switch (evnt.type) {	// case statement
+		case SDL_QUIT:
+			play = false;		// stop loop/ game
+			SDL_Quit();			//close SDL
+			break;
+		case SDL_KEYDOWN:
+			// Check the SDLKey values and move change the coords
+			switch (evnt.key.keysym.sym){
+			case SDLK_LEFT:			   // case left arrow key
+				if (shipX > 0) {	   // check if on the screen
+					shipX -= shipMove; // move ship to the left
+				}
+				break;
+			case SDLK_RIGHT:
+				if (shipX < 770){	 // although the screen dimensions are 800x600 the reduction is so the ship doesn't fly off the screen
+					shipX += shipMove;
+				}
+				break;
+			case SDLK_UP:
+				if (shipY > 0){
+					shipY -= shipMove;
+				}
+				break;
+			case SDLK_DOWN:
+				if (shipY < 540){
+					shipY += shipMove;
+				}
+				break;
+			default:
+				break;
+			}
+		cout << "X: " << shipX << "	| Y:" << shipY << endl;  // displays current ship co-ords
+	}
+}
+
+void refreshWindow(SDL_Window*& window, SDL_Surface*& screenSurface, SDL_Surface*& backgroundSurface, SDL_Surface*& rocket, SDL_Rect& rocketLocation, int &shipX, int &shipY)
+{
+	rocketLocation.x = shipX;	 // assign new rocket positions
+	rocketLocation.y = shipY;
+
+	SDL_BlitSurface(backgroundSurface, NULL, screenSurface, NULL);	//reset image to background
+	SDL_BlitSurface(rocket, NULL, screenSurface, &rocketLocation);	//add new image of rocket at new position
+	SDL_UpdateWindowSurface(window); // display new image
+}
+
+/*
+Image sourced from: http://www.starryskyaustin.com/
+
+Research From:
+https://www.youtube.com/user/makinggameswithben	<-- Source of tutorials. Thanks Ben :)
+http://stackoverflow.com/questions/24422358/sdl-how-can-i-make-the-background-picture-render
+https://wiki.libsdl.org/SDL_Event
+https://wiki.libsdl.org/SDL_BlitSurface
+https://wiki.libsdl.org/SDL_Rect
+http://lazyfoo.net/tutorials/SDL/02_getting_an_image_on_the_screen/index.php
+http://gamedevgeek.com/tutorials/moving-sprites-with-sdl/
+
+Thanks to Owen for helping with the pixel art ship, and my supervisor for his advice insight.
+*/
